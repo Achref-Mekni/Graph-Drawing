@@ -32,11 +32,116 @@
 // negativ elojellel szamoljak el es ezzel parhuzamosan eljaras is indul velem szemben.
 //=============================================================================================
 #include "framework.h"
-#include "logic.h"
+#include <time.h>
 
-Graph *graph = new Graph();
-std::vector<float> vectorvertices = graph->getVertices();
-std::vector<float> vectorlines = graph->getLines();
+class Node
+{
+private:
+	vec2 center;
+	float radius;
+
+public:
+	Node(vec2 center)
+	{
+		this->center = center;
+		this->radius = 0.05f;
+	}
+	vec2 getCenter()
+	{
+		return this->center;
+	}
+};
+
+class Edge
+{
+private:
+	Node *N1;
+	Node *N2;
+
+public:
+	Edge(Node *N1, Node *N2)
+	{
+		this->N1 = N1;
+		this->N2 = N2;
+	}
+	std::vector<float> getCoordinates()
+	{
+		std::vector<float> temp = {};
+		vec2 v1 = N1->getCenter();
+		vec2 v2 = N2->getCenter();
+		temp.push_back(v1.x);
+		temp.push_back(v1.y);
+		temp.push_back(v2.x);
+		temp.push_back(v2.y);
+		return temp;
+	}
+	void render()
+	{
+	}
+};
+
+class Graph
+{
+private:
+	std::vector<Node*> nodes;
+	std::vector<Edge*> edges;
+	std::vector<float> vertices;
+	std::vector<float> lines;
+
+public:
+	Graph()
+	{
+
+		srand(time(0));
+		nodes = {};
+		vertices = {};
+		edges = {};
+		lines = {};
+		
+		for (int i = 0; i < 50; i++)
+		{
+			vec2 center{ (float)(rand() % 200 - 100) / 100, (float)(rand() % 200 - 100) / 100 };
+			nodes.push_back(new Node(center));
+		}
+		for (Node *N : nodes)
+		{
+			vec2 center = N->getCenter();
+			vertices.push_back(center.x);
+			vertices.push_back(center.y);
+		}
+		for (int i = 0; i < 50; i++)
+		{
+			for (int j = i + 1; j < 50; j++)
+			{
+				if (rand() % 100 <= 5)
+					edges.push_back(new Edge(nodes.at(i), nodes.at(j)));
+			}
+		}
+		for (Edge *E : edges)
+		{
+			std::vector<float> coordinates = E->getCoordinates();
+			lines.push_back(coordinates.at(0));
+			lines.push_back(coordinates.at(1));
+			lines.push_back(coordinates.at(2));
+			lines.push_back(coordinates.at(3));
+		}
+	}
+	void render()
+	{
+
+	}
+
+	std::vector<float> getVertices()
+	{
+		return this->vertices;
+	}
+	std::vector<float> getLines()
+	{
+		return this->lines;
+	}
+};
+
+
 
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char *const vertexSource = R"(
@@ -64,18 +169,39 @@ const char *const fragmentSource = R"(
 	}
 )";
 
+Graph *graph = new Graph();
+std::vector<float> vectorvertices = graph->getVertices();
+std::vector<float> vectorlines = graph->getLines();
 GPUProgram gpuProgram; // vertex and fragment shaders
 unsigned int vao, tao; // virtual world on the GPU
+float vertices[] = {
+		-0.5f, -0.6f, 0.0f,
+		0.5f, -0.6f, 0.0f,
+		0.4f,  0.5f, 0.0f,
+		0.5f, 0.6f, 0.0f,
+		-0.5f, 0.6f, 0.0f,
+		-0.4f,  -0.5f, 0.0f
+
+};
+
+float colors[] = {
+	 1.0f, 0.0f, 0.0f, // red
+	 1.0f, 0.0f, 0.0f,
+	 1.0f, 0.0f, 0.0f,
+	 0.0f, 1.0f, 0.0f, // green
+	 0.0f, 1.0f, 0.0f,
+	 0.0f, 1.0f, 0.0f
+};
 
 // Initialization, create an OpenGL context
 void onInitialization()
 {
 	glEnable(GL_PROGRAM_POINT_SIZE_EXT);
 	glPointSize(5);
-	Graph *graph = new Graph();
-	std::vector<float> vectorvertices = graph->getVertices();
+	//Graph *graph = new Graph();
+	//std::vector<float> vectorvertices = graph->getVertices();
 	glViewport(0, 0, windowWidth, windowHeight);
-
+	
 	glGenVertexArrays(1, &vao); // get 1 vao id
 	glBindVertexArray(vao);		// make it active
 
@@ -83,21 +209,24 @@ void onInitialization()
 	glGenBuffers(1, &vbo); // Generate 1 buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	float vertices[vectorvertices.size()];
+	float *vertices  = new float[vectorvertices.size()];
 	for (int i = 0; i < vectorvertices.size(); i++)
+	{
 		vertices[i] = vectorvertices.at(i);
+		//printf("%f",vertices[i]);
+	}
 
 	glBufferData(GL_ARRAY_BUFFER,  // Copy to GPU target
-				 sizeof(vertices), // # bytes
-				 vertices,		   // address
-				 GL_STATIC_DRAW);  // we do not change later
+		(vectorvertices.size())*sizeof(vertices), // # bytes
+		vertices,		   // address
+		GL_STATIC_DRAW);  // we do not change later
 
 	glEnableVertexAttribArray(0);				 // AttribArray 0
 	glVertexAttribPointer(0,					 // vbo -> AttribArray 0
-						  2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-						  0, NULL);				 // stride, offset: tightly packed
+		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
+		0, NULL);				 // stride, offset: tightly packed
 
-	// create program for the GPU
+// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
 
 	glGenVertexArrays(1, &tao); // get 1 vao id
@@ -105,49 +234,70 @@ void onInitialization()
 	glGenBuffers(1, &vbo);		// Generate 1 buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	float lines[vectorlines.size()];
+	
+	float* lines = new float[vectorlines.size()];
+	
 	for (int i = 0; i < vectorlines.size(); i++)
+	{
 		lines[i] = vectorlines.at(i);
+	}
 
 	glBufferData(GL_ARRAY_BUFFER, // Copy to GPU target
-				 sizeof(lines),	  // # bytes
-				 lines,			  // address
-				 GL_STATIC_DRAW); // we do not change later
+		(vectorlines.size())*sizeof(lines),	  // # bytes
+		lines,			  // address
+		GL_STATIC_DRAW); // we do not change later
 
 	glEnableVertexAttribArray(0);				 // AttribArray 0
 	glVertexAttribPointer(0,					 // vbo -> AttribArray 0
-						  2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-						  0, NULL);				 // stride, offset: tightly packed
+		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
+		0, NULL);				 // stride, offset: tightly packed
 
-	// create program for the GPU
+// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
 }
 
 // Window has become invalid: Redraw
 void onDisplay()
 {
-	glClearColor(0, 0, 0, 0);	  // background color
+	bool yes = false;
+	glClearColor(1, 2, 5, 6);	  // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
+	int location = glGetUniformLocation(gpuProgram.getId(), "color");
+	float MVPtransf[4][4] = { 1, 0, 0, 0, // MVP matrix,
+								 0, 1, 0, 0, // row-major!
+								 0, 0, 1, 0,
+								 0, 0, 0, 1 };
 
 	// Set color to (0, 1, 0) = green
-	int location = glGetUniformLocation(gpuProgram.getId(), "color");
-	glUniform3f(location, 0.0f, 1.0f, 0.0f); // 3 floats
-
-	float MVPtransf[4][4] = {1, 0, 0, 0, // MVP matrix,
-							 0, 1, 0, 0, // row-major!
-							 0, 0, 1, 0,
-							 0, 0, 0, 1};
-
-	location = glGetUniformLocation(gpuProgram.getId(), "MVP"); // Get the GPU location of uniform variable MVP
-	glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]); // Load a 4x4 row-major float matrix to the specified location
-
 	glBindVertexArray(vao); // Draw call
-	glDrawArrays(GL_POINTS, 0 /*startIdx*/, 50 /*# Elements*/);
+	for (int i = 0; i < 50; i++)
+	{
+		double r = ((double)rand() / (RAND_MAX));
+		double g = ((double)rand() / (RAND_MAX));
+		double b = ((double)rand() / (RAND_MAX));
+
+		glUniform3f(location, r, g, b); // 3 floats
+
+	
+		glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
+
+
+	}
+
+
+	glUniform3f(location, 1.0f, 0.0f, 0.0f); // 3 floats
+
+	int location2 = glGetUniformLocation(gpuProgram.getId(), "MVP"); // Get the GPU location of uniform variable MVP
+
+	glUniformMatrix4fv(location2, 1, GL_TRUE, &MVPtransf[0][0]); // Load a 4x4 row-major float matrix to the specified location
+
+	
 
 	glBindVertexArray(tao); // Draw call
 	glDrawArrays(GL_LINES, 0 /*startIdx*/, 50 /*# Elements*/);
-
 	glutSwapBuffers(); // exchange buffers for double buffering
+
+
 }
 
 // Key of ASCII code pressed
