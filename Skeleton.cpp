@@ -34,6 +34,23 @@
 #include "framework.h"
 #include <time.h>
 
+class Camera {
+	vec2 wCenter;
+	vec2 wSize;
+
+public:
+	Camera(): wCenter(0,0), wSize(200,200) {}
+	mat4 V() { return TranslateMatrix(-wCenter); }
+	mat4 P() { return ScaleMatrix(vec2(2/wSize.x,2/wSize.y)); }
+	mat4 Vinv() { return TranslateMatrix(wCenter); }
+	mat4 Pinv() { return ScaleMatrix(vec2( wSize.x/2,  wSize.y/2)); }
+	void Zoom(float s) { wSize = wSize * s; }
+	void Pan(vec2 t) { wCenter = wCenter + t; }
+	vec2 getCenter() { return this->wCenter; }
+
+
+};
+
 class Node
 {
 private:
@@ -168,7 +185,11 @@ const char *const fragmentSource = R"(
 		outColor = vec4(color, 1);	// computed color is the color of the primitive
 	}
 )";
-
+bool yes = false;
+double *rC = new double[50];
+double *gC = new double[50];
+double *bC = new double[50];
+Camera camera;
 Graph *graph = new Graph();
 std::vector<float> vectorvertices = graph->getVertices();
 std::vector<float> vectorlines = graph->getLines();
@@ -259,39 +280,65 @@ void onInitialization()
 // Window has become invalid: Redraw
 void onDisplay()
 {
-	bool yes = false;
+	
 	glClearColor(1, 2, 5, 6);	  // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 	int location = glGetUniformLocation(gpuProgram.getId(), "color");
+	int xC = camera.getCenter().x;
+	int yC = camera.getCenter().y;
 	float MVPtransf[4][4] = { 1, 0, 0, 0, // MVP matrix,
 								 0, 1, 0, 0, // row-major!
 								 0, 0, 1, 0,
-								 0, 0, 0, 1 };
+								 xC, yC, 0, 1 };
+
+	int location3 = glGetUniformLocation(gpuProgram.getId(), "MVP"); // Get the GPU location of uniform variable MVP
+
+	glUniformMatrix4fv(location3, 1, GL_TRUE, &MVPtransf[0][0]); // Load a 4x4 row-major float matrix to the specified location
 
 	// Set color to (0, 1, 0) = green
 	glBindVertexArray(vao); // Draw call
-	for (int i = 0; i < 50; i++)
+	if (yes == false)
 	{
-		double r = ((double)rand() / (RAND_MAX));
-		double g = ((double)rand() / (RAND_MAX));
-		double b = ((double)rand() / (RAND_MAX));
+		for (int i = 0; i < 50; i++)
+		{
+			double r = ((double)rand() / (RAND_MAX));
+			double g = ((double)rand() / (RAND_MAX));
+			double b = ((double)rand() / (RAND_MAX));
 
-		glUniform3f(location, r, g, b); // 3 floats
+			rC[i] = r;
+			gC[i] = g;
+			bC[i] = b;
 
-	
-		glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
+			glUniform3f(location, r, g, b); // 3 floats
 
+
+			glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
+
+
+		}
+		yes = true;
+	}
+	else
+	{
+		for (int i = 0; i < 50; i++)
+		{
+			
+
+			glUniform3f(location, rC[i], gC[i], bC[i]); // 3 floats
+
+
+			glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
+
+
+		}
 
 	}
+	
 
 
 	glUniform3f(location, 1.0f, 0.0f, 0.0f); // 3 floats
 
-	int location2 = glGetUniformLocation(gpuProgram.getId(), "MVP"); // Get the GPU location of uniform variable MVP
 
-	glUniformMatrix4fv(location2, 1, GL_TRUE, &MVPtransf[0][0]); // Load a 4x4 row-major float matrix to the specified location
-
-	
 
 	glBindVertexArray(tao); // Draw call
 	glDrawArrays(GL_LINES, 0 /*startIdx*/, 50 /*# Elements*/);
@@ -303,8 +350,17 @@ void onDisplay()
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY)
 {
-	if (key == 'd')
-		glutPostRedisplay(); // if d, invalidate display, i.e. redraw
+	switch (key) {
+
+		case 'z': camera.Pan(vec2(-1, 0)); break;
+		case 's': camera.Pan(vec2(+1, 0)); break;
+		case 'q': camera.Pan(vec2(0, 1)); break;
+		case 'd': camera.Pan(vec2(0, -1)); break;
+
+
+	}
+	glutPostRedisplay(); // if d, invalidate display, i.e. redraw
+
 }
 
 // Key of ASCII code released
@@ -312,43 +368,68 @@ void onKeyboardUp(unsigned char key, int pX, int pY)
 {
 }
 
+//float oldx = 0;
+//float oldy = 0;
+bool clicked = false;
 // Move mouse with key pressed
 void onMouseMotion(int pX, int pY)
 { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
 	// Convert to normalized device space
-	float cX = 2.0f * pX / windowWidth - 1; // flip y axis
-	float cY = 1.0f - 2.0f * pY / windowHeight;
+	
+	float cX = 0.08*(2.0f * pX / windowWidth - 1); // flip y axis
+	float cY = 0.08*(1.0f - 2.0f * pY / windowHeight);
+	
+	
+	camera.Pan(vec2(-cX, -cY));
 	printf("Mouse moved to (%3.2f, %3.2f)\n", cX, cY);
+	//oldx = cX;
+	//oldy = cY;
+	if (clicked == true)
+	{
+		glTranslatef(cX, cY,0);
+		glutPostRedisplay();
+	}
+	
+	 // if d, invalidate display, i.e. redraw
+	//glutPostRedisplay(); // if d, invalidate display, i.e. redraw
+
 }
 
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY)
 { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
 	// Convert to normalized device space
-	float cX = 2.0f * pX / windowWidth - 1; // flip y axis
-	float cY = 1.0f - 2.0f * pY / windowHeight;
-
+	//float cX = 0.05*(2.0f * pX / windowWidth - 1); // flip y axis
+	//float cY = 0.05*(1.0f - 2.0f * pY / windowHeight);
+	float cX = 0.08*(2.0f * pX / windowWidth - 1); // flip y axis
+	float cY = 0.08*(1.0f - 2.0f * pY / windowHeight);
 	char *buttonStat;
 	switch (state)
 	{
 	case GLUT_DOWN:
 		buttonStat = "pressed";
+		//camera.Pan(vec2(-cX, -cY));
+		//glutPassiveMotionFunc(onMouseMotion);
+		clicked = true;
+
 		break;
 	case GLUT_UP:
 		buttonStat = "released";
+		clicked = false;
 		break;
 	}
 
 	switch (button)
 	{
 	case GLUT_LEFT_BUTTON:
-		printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
+		
+		//printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
 		break;
 	case GLUT_MIDDLE_BUTTON:
-		printf("Middle button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
+		//printf("Middle button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
 		break;
 	case GLUT_RIGHT_BUTTON:
-		printf("Right button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
+		//printf("Right button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
 		break;
 	}
 }
