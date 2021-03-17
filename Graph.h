@@ -22,7 +22,18 @@ public:
     std::vector<float> getLines();
 
     void prepare();
-    void render();
+    void render(vec2 cameraCenter);
+};
+
+class Camera
+{
+private:
+    vec2 Center;
+
+public:
+    Camera();
+    void slide(vec2 s);
+    vec2 getCenter();
 };
 
 #endif

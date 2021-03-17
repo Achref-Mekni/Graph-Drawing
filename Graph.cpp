@@ -87,14 +87,14 @@ void Graph::prepare()
     gpuProgram.create(vertexSource, fragmentSource, "outColor");
 }
 
-void Graph::render()
+void Graph::render(vec2 cameraCenter)
 {
     glClearColor(0, 0, 0, 0);            // background color
     glClear(GL_COLOR_BUFFER_BIT);        // clear frame buffer
-    float MVPtransf[4][4] = {1, 0, 0, 0, // MVP matrix,
-                             0, 1, 0, 0, // row-major!
-                             0, 0, 1, 0,
-                             0, 0, 0, 1};
+    float MVPtransf[4][4] = {100, 0, 0, 0, // MVP matrix,
+                             0, 100, 0, 0, // row-major!
+                             0, 0, 100, 0,
+                             cameraCenter.x, cameraCenter.y, 0, 50};
 
     int location = glGetUniformLocation(gpuProgram.getId(), "MVP");
     glUniformMatrix4fv(location, 1, GL_TRUE, &MVPtransf[0][0]);
@@ -120,3 +120,18 @@ std::vector<float> Graph::getLines()
 {
     return this->lines;
 };
+
+Camera::Camera()
+{
+    this->Center = vec2{0, 0};
+}
+
+void Camera::slide(vec2 s)
+{
+    this->Center = this->Center + s;
+}
+
+vec2 Camera::getCenter()
+{
+    return this->Center;
+}

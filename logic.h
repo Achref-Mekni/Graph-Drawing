@@ -3,8 +3,4 @@
 
 float randab(float a, float b);
 
-class Camera
-{
-};
-
 #endif
