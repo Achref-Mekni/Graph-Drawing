@@ -14,10 +14,6 @@ Graph::Graph()
     {
         vec2 center{randab(-1, 1), randab(-1, 1)};
         nodes.push_back(new Node(center));
-    }
-    for (Node *N : nodes)
-    {
-        vec2 center = N->getCenter();
         vertices.push_back(center.x);
         vertices.push_back(center.y);
     }
@@ -25,17 +21,16 @@ Graph::Graph()
     {
         for (int j = i + 1; j < 50; j++)
         {
-            if (rand() % 100 <= 4)
+            if (rand() % 100 < 5)
+            {
                 edges.push_back(new Edge(nodes.at(i), nodes.at(j)));
+                std::vector<float> coordinates = edges.at(i)->getCoordinates();
+                lines.push_back(coordinates.at(0));
+                lines.push_back(coordinates.at(1));
+                lines.push_back(coordinates.at(2));
+                lines.push_back(coordinates.at(3));
+            }
         }
-    }
-    for (Edge *E : edges)
-    {
-        std::vector<float> coordinates = E->getCoordinates();
-        lines.push_back(coordinates.at(0));
-        lines.push_back(coordinates.at(1));
-        lines.push_back(coordinates.at(2));
-        lines.push_back(coordinates.at(3));
     }
 }
 
