@@ -34,21 +34,20 @@
 #include "framework.h"
 #include <time.h>
 
-class Camera {
+class Camera
+{
 	vec2 wCenter;
 	vec2 wSize;
 
 public:
-	Camera(): wCenter(0,0), wSize(200,200) {}
+	Camera() : wCenter(0, 0), wSize(200, 200) {}
 	mat4 V() { return TranslateMatrix(-wCenter); }
-	mat4 P() { return ScaleMatrix(vec2(2/wSize.x,2/wSize.y)); }
+	mat4 P() { return ScaleMatrix(vec2(2 / wSize.x, 2 / wSize.y)); }
 	mat4 Vinv() { return TranslateMatrix(wCenter); }
-	mat4 Pinv() { return ScaleMatrix(vec2( wSize.x/2,  wSize.y/2)); }
+	mat4 Pinv() { return ScaleMatrix(vec2(wSize.x / 2, wSize.y / 2)); }
 	void Zoom(float s) { wSize = wSize * s; }
 	void Pan(vec2 t) { wCenter = wCenter + t; }
 	vec2 getCenter() { return this->wCenter; }
-
-
 };
 
 class Node
@@ -100,8 +99,8 @@ public:
 class Graph
 {
 private:
-	std::vector<Node*> nodes;
-	std::vector<Edge*> edges;
+	std::vector<Node *> nodes;
+	std::vector<Edge *> edges;
 	std::vector<float> vertices;
 	std::vector<float> lines;
 
@@ -114,10 +113,10 @@ public:
 		vertices = {};
 		edges = {};
 		lines = {};
-		
+
 		for (int i = 0; i < 50; i++)
 		{
-			vec2 center{ (float)(rand() % 200 - 100) / 100, (float)(rand() % 200 - 100) / 100 };
+			vec2 center{(float)(rand() % 200 - 100) / 100, (float)(rand() % 200 - 100) / 100};
 			nodes.push_back(new Node(center));
 		}
 		for (Node *N : nodes)
@@ -145,7 +144,6 @@ public:
 	}
 	void render()
 	{
-
 	}
 
 	std::vector<float> getVertices()
@@ -157,8 +155,6 @@ public:
 		return this->lines;
 	}
 };
-
-
 
 // vertex shader in GLSL: It is a Raw string (C++11) since it contains new line characters
 const char *const vertexSource = R"(
@@ -196,23 +192,22 @@ std::vector<float> vectorlines = graph->getLines();
 GPUProgram gpuProgram; // vertex and fragment shaders
 unsigned int vao, tao; // virtual world on the GPU
 float vertices[] = {
-		-0.5f, -0.6f, 0.0f,
-		0.5f, -0.6f, 0.0f,
-		0.4f,  0.5f, 0.0f,
-		0.5f, 0.6f, 0.0f,
-		-0.5f, 0.6f, 0.0f,
-		-0.4f,  -0.5f, 0.0f
+	-0.5f, -0.6f, 0.0f,
+	0.5f, -0.6f, 0.0f,
+	0.4f, 0.5f, 0.0f,
+	0.5f, 0.6f, 0.0f,
+	-0.5f, 0.6f, 0.0f,
+	-0.4f, -0.5f, 0.0f
 
 };
 
 float colors[] = {
-	 1.0f, 0.0f, 0.0f, // red
-	 1.0f, 0.0f, 0.0f,
-	 1.0f, 0.0f, 0.0f,
-	 0.0f, 1.0f, 0.0f, // green
-	 0.0f, 1.0f, 0.0f,
-	 0.0f, 1.0f, 0.0f
-};
+	1.0f, 0.0f, 0.0f, // red
+	1.0f, 0.0f, 0.0f,
+	1.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f, // green
+	0.0f, 1.0f, 0.0f,
+	0.0f, 1.0f, 0.0f};
 
 // Initialization, create an OpenGL context
 void onInitialization()
@@ -222,7 +217,7 @@ void onInitialization()
 	//Graph *graph = new Graph();
 	//std::vector<float> vectorvertices = graph->getVertices();
 	glViewport(0, 0, windowWidth, windowHeight);
-	
+
 	glGenVertexArrays(1, &vao); // get 1 vao id
 	glBindVertexArray(vao);		// make it active
 
@@ -230,24 +225,24 @@ void onInitialization()
 	glGenBuffers(1, &vbo); // Generate 1 buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	float *vertices  = new float[vectorvertices.size()];
+	float *vertices = new float[vectorvertices.size()];
 	for (int i = 0; i < vectorvertices.size(); i++)
 	{
 		vertices[i] = vectorvertices.at(i);
 		//printf("%f",vertices[i]);
 	}
 
-	glBufferData(GL_ARRAY_BUFFER,  // Copy to GPU target
-		(vectorvertices.size())*sizeof(vertices), // # bytes
-		vertices,		   // address
-		GL_STATIC_DRAW);  // we do not change later
+	glBufferData(GL_ARRAY_BUFFER,							 // Copy to GPU target
+				 (vectorvertices.size()) * sizeof(vertices), // # bytes
+				 vertices,									 // address
+				 GL_STATIC_DRAW);							 // we do not change later
 
 	glEnableVertexAttribArray(0);				 // AttribArray 0
 	glVertexAttribPointer(0,					 // vbo -> AttribArray 0
-		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-		0, NULL);				 // stride, offset: tightly packed
+						  2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
+						  0, NULL);				 // stride, offset: tightly packed
 
-// create program for the GPU
+	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
 
 	glGenVertexArrays(1, &tao); // get 1 vao id
@@ -255,41 +250,41 @@ void onInitialization()
 	glGenBuffers(1, &vbo);		// Generate 1 buffer
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-	
-	float* lines = new float[vectorlines.size()];
-	
+
+	float *lines = new float[vectorlines.size()];
+
 	for (int i = 0; i < vectorlines.size(); i++)
 	{
 		lines[i] = vectorlines.at(i);
 	}
 
-	glBufferData(GL_ARRAY_BUFFER, // Copy to GPU target
-		(vectorlines.size())*sizeof(lines),	  // # bytes
-		lines,			  // address
-		GL_STATIC_DRAW); // we do not change later
+	glBufferData(GL_ARRAY_BUFFER,					   // Copy to GPU target
+				 (vectorlines.size()) * sizeof(lines), // # bytes
+				 lines,								   // address
+				 GL_STATIC_DRAW);					   // we do not change later
 
 	glEnableVertexAttribArray(0);				 // AttribArray 0
 	glVertexAttribPointer(0,					 // vbo -> AttribArray 0
-		2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
-		0, NULL);				 // stride, offset: tightly packed
+						  2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
+						  0, NULL);				 // stride, offset: tightly packed
 
-// create program for the GPU
+	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
 }
 
 // Window has become invalid: Redraw
 void onDisplay()
 {
-	
+
 	glClearColor(1, 2, 5, 6);	  // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 	int location = glGetUniformLocation(gpuProgram.getId(), "color");
 	int xC = camera.getCenter().x;
 	int yC = camera.getCenter().y;
-	float MVPtransf[4][4] = { 1, 0, 0, 0, // MVP matrix,
-								 0, 1, 0, 0, // row-major!
-								 0, 0, 1, 0,
-								 xC, yC, 0, 1 };
+	float MVPtransf[4][4] = {10, 0, 0, 0, // MVP matrix,
+							 0, 10, 0, 0, // row-major!
+							 0, 0, 10, 0,
+							 xC, yC, 0, 10};
 
 	int location3 = glGetUniformLocation(gpuProgram.getId(), "MVP"); // Get the GPU location of uniform variable MVP
 
@@ -311,10 +306,7 @@ void onDisplay()
 
 			glUniform3f(location, r, g, b); // 3 floats
 
-
 			glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
-
-
 		}
 		yes = true;
 	}
@@ -322,45 +314,40 @@ void onDisplay()
 	{
 		for (int i = 0; i < 50; i++)
 		{
-			
 
 			glUniform3f(location, rC[i], gC[i], bC[i]); // 3 floats
 
-
 			glDrawArrays(GL_POINTS, i /*startIdx*/, 1 /*# Elements*/);
-
-
 		}
-
 	}
-	
-
 
 	glUniform3f(location, 1.0f, 0.0f, 0.0f); // 3 floats
-
-
 
 	glBindVertexArray(tao); // Draw call
 	glDrawArrays(GL_LINES, 0 /*startIdx*/, 50 /*# Elements*/);
 	glutSwapBuffers(); // exchange buffers for double buffering
-
-
 }
 
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY)
 {
-	switch (key) {
+	switch (key)
+	{
 
-		case 'z': camera.Pan(vec2(-1, 0)); break;
-		case 's': camera.Pan(vec2(+1, 0)); break;
-		case 'q': camera.Pan(vec2(0, 1)); break;
-		case 'd': camera.Pan(vec2(0, -1)); break;
-
-
+	case 'z':
+		camera.Pan(vec2(-1, 0));
+		break;
+	case 's':
+		camera.Pan(vec2(+1, 0));
+		break;
+	case 'q':
+		camera.Pan(vec2(0, 1));
+		break;
+	case 'd':
+		camera.Pan(vec2(0, -1));
+		break;
 	}
 	glutPostRedisplay(); // if d, invalidate display, i.e. redraw
-
 }
 
 // Key of ASCII code released
@@ -375,24 +362,22 @@ bool clicked = false;
 void onMouseMotion(int pX, int pY)
 { // pX, pY are the pixel coordinates of the cursor in the coordinate system of the operation system
 	// Convert to normalized device space
-	
-	float cX = 0.08*(2.0f * pX / windowWidth - 1); // flip y axis
-	float cY = 0.08*(1.0f - 2.0f * pY / windowHeight);
-	
-	
+
+	float cX = 0.08 * (2.0f * pX / windowWidth - 1); // flip y axis
+	float cY = 0.08 * (1.0f - 2.0f * pY / windowHeight);
+
 	camera.Pan(vec2(-cX, -cY));
 	printf("Mouse moved to (%3.2f, %3.2f)\n", cX, cY);
 	//oldx = cX;
 	//oldy = cY;
 	if (clicked == true)
 	{
-		glTranslatef(cX, cY,0);
+		glTranslatef(cX, cY, 0);
 		glutPostRedisplay();
 	}
-	
-	 // if d, invalidate display, i.e. redraw
-	//glutPostRedisplay(); // if d, invalidate display, i.e. redraw
 
+	// if d, invalidate display, i.e. redraw
+	//glutPostRedisplay(); // if d, invalidate display, i.e. redraw
 }
 
 // Mouse click event
@@ -401,8 +386,8 @@ void onMouse(int button, int state, int pX, int pY)
 	// Convert to normalized device space
 	//float cX = 0.05*(2.0f * pX / windowWidth - 1); // flip y axis
 	//float cY = 0.05*(1.0f - 2.0f * pY / windowHeight);
-	float cX = 0.08*(2.0f * pX / windowWidth - 1); // flip y axis
-	float cY = 0.08*(1.0f - 2.0f * pY / windowHeight);
+	float cX = 0.08 * (2.0f * pX / windowWidth - 1); // flip y axis
+	float cY = 0.08 * (1.0f - 2.0f * pY / windowHeight);
 	char *buttonStat;
 	switch (state)
 	{
@@ -422,7 +407,7 @@ void onMouse(int button, int state, int pX, int pY)
 	switch (button)
 	{
 	case GLUT_LEFT_BUTTON:
-		
+
 		//printf("Left button %s at (%3.2f, %3.2f)\n", buttonStat, cX, cY);
 		break;
 	case GLUT_MIDDLE_BUTTON:
